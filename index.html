@@ -133,6 +133,23 @@
             cursor: pointer;
         }
 
+        /* Botão do Modo de Visualização */
+        .toggle-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-bottom: 1.5rem;
+            transition: background 0.3s;
+        }
+
+        .toggle-btn.view-mode {
+            background: #2ecc71;
+        }
+
         .input-group {
             display: flex;
             flex-direction: column;
@@ -195,6 +212,9 @@
     <div id="tester" class="tab-content">
         <div class="input-group">
             <h2>Escreve uma palavra ou sequência</h2>
+            
+            <button id="visibility-toggle" class="toggle-btn" onclick="toggleInputVisibility()">Esconder Painel de Escrita</button>
+            
             <input type="text" id="text-input" placeholder="Ex: gato rato... " oninput="renderText()">
             <div id="debug-output" class="debug-info">Código Fonético: -</div>
         </div>
@@ -237,23 +257,44 @@
 
         let editorState = new Array(49).fill(0);
 
+        // NOVO: Função para alternar a visibilidade do input de texto
+        function toggleInputVisibility() {
+            const btn = document.getElementById('visibility-toggle');
+            const inputField = document.getElementById('text-input');
+            const debugField = document.getElementById('debug-output');
+            const titleField = document.querySelector('#tester h2');
+
+            if (inputField.style.display !== 'none') {
+                // Modo de Visualização Puro
+                inputField.style.display = 'none';
+                debugField.style.display = 'none';
+                if(titleField) titleField.style.display = 'none';
+                btn.innerText = "Mostrar Painel de Escrita";
+                btn.classList.add('view-mode');
+            } else {
+                // Modo de Edição/Escrita
+                inputField.style.display = '';
+                debugField.style.display = '';
+                if(titleField) titleField.style.display = '';
+                btn.innerText = "Esconder Painel de Escrita";
+                btn.classList.remove('view-mode');
+            }
+        }
+
         // MOTOR DE CONVERSÃO FONÉTICA
         function converterTextoParaSistemaMajor(texto) {
             let resultado = texto.toUpperCase();
 
-            // Passo 1: Substituição de Dígrafos
             resultado = resultado.replaceAll('CH', '6');
             resultado = resultado.replaceAll('LH', '5');
             resultado = resultado.replaceAll('NH', '2');
             resultado = resultado.replaceAll('RR', '4');
 
-            // Passo 2: Regras fonéticas contextuais para C e G (antes de E, I)
             resultado = resultado.replaceAll('CE', '0E');
             resultado = resultado.replaceAll('CI', '0I');
             resultado = resultado.replaceAll('GE', '6E');
             resultado = resultado.replaceAll('GI', '6I');
 
-            // Passo 3: Substituição de Consoantes Individuais Mapeadas
             const consoantes = {
                 'S': '0', 'Z': '0',
                 'T': '1', 'D': '1',
@@ -271,9 +312,7 @@
                 resultado = resultado.replaceAll(chave, valor);
             }
 
-            // Passo 4: Limpeza (AGORA PRESERVA OS ESPAÇOS: \s)
             resultado = resultado.replace(/[^AEIO0-9\s]/g, '');
-
             return resultado;
         }
 
@@ -319,7 +358,7 @@
             return resultado;
         }
 
-        // Motor de Rendering Dinâmico com Isolamento por Espaço (ATUALIZADO)
+        // Motor de Rendering Dinâmico com Isolamento por Espaço
         function renderText() {
             const rawInput = document.getElementById('text-input').value;
             const inputFiltrado = converterTextoParaSistemaMajor(rawInput);
@@ -329,14 +368,11 @@
             const container = document.getElementById('word-container');
             container.innerHTML = ''; 
 
-            // Divide a string pelos espaços para processar cada palavra independentemente
             const palavras = inputFiltrado.split(/\s+/);
 
             for (let palavra of palavras) {
-                // Se a palavra estiver vazia (ex: espaço no final), ignora e não renderiza blocos vazios
                 if (!palavra) continue;
 
-                // Extrai os blocos silábicos contidos apenas nesta palavra isolada
                 const blocos = palavra.match(/[A-Z]*[0-9][A-Z]*/g) || [];
 
                 for (let bloco of blocos) {
@@ -355,27 +391,27 @@
                         let ordemAnterior = 0; 
                         let ordemPosterior = 0; 
 
-                    for (let i = 0; i < bloco.length; i++) {
-                        if (i === numIndex) continue;
+                        for (let i = 0; i < bloco.length; i++) {
+                            if (i === numIndex) continue;
 
-                        let charVogal = bloco[i];
+                            let charVogal = bloco[i];
 
-                        if (i < numIndex) {
-                            if (vogaisAnteriores[charVogal]) {
-                                let estadoId = 2 + ordemAnterior;
-                                if (estadoId > 5) estadoId = 5; 
-                                estadoAtual = aplicarVogal(estadoAtual, vogaisAnteriores[charVogal], estadoId);
-                                ordemAnterior++;
-                            }
-                        } else {
-                            if (vogaisPosteriores[charVogal]) {
-                                let estadoId = 2 + ordemPosterior;
-                                if (estadoId > 5) estadoId = 5; 
-                                estadoAtual = aplicarVogal(estadoAtual, vogaisPosteriores[charVogal], estadoId);
-                                ordemPosterior++;
+                            if (i < numIndex) {
+                                if (vogaisAnteriores[charVogal]) {
+                                    let estadoId = 2 + ordemAnterior;
+                                    if (estadoId > 5) estadoId = 5; 
+                                    estadoAtual = aplicarVogal(estadoAtual, vogaisAnteriores[charVogal], estadoId);
+                                    ordemAnterior++;
+                                }
+                            } else {
+                                if (vogaisPosteriores[charVogal]) {
+                                    let estadoId = 2 + ordemPosterior;
+                                    if (estadoId > 5) estadoId = 5; 
+                                    estadoAtual = aplicarVogal(estadoAtual, vogaisPosteriores[charVogal], estadoId);
+                                    ordemPosterior++;
+                                }
                             }
                         }
-                    }
 
                         container.appendChild(createDisplayGrid(estadoAtual));
                     }
