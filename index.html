@@ -283,7 +283,11 @@
 
         // MOTOR DE CONVERSÃO FONÉTICA
         function converterTextoParaSistemaMajor(texto) {
-            let resultado = texto.toUpperCase();
+            let resultado = texto
+                .replace(/[çÇ]/g, '0')
+                .toUpperCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '');
 
             resultado = resultado.replaceAll('CH', '6');
             resultado = resultado.replaceAll('LH', '5');
