@@ -85,19 +85,15 @@
         }
 
         /* === SISTEMA DE ESTADOS DAS VOGAIS === */
-        
-        /* 1ª Vogal: Totalmente preenchida */
         .cell.vowel-1 {
             background-color: var(--grid-vowel);
         }
 
-        /* 2ª Vogal: Apenas contorno (Fundo mantém o cinza da grelha) */
         .cell.vowel-2 {
             border: 3px solid var(--grid-vowel);
             background-color: var(--grid-empty);
         }
 
-        /* 3ª Vogal: Contorno + 1 Linha Diagonal (\) */
         .cell.vowel-3 {
             border: 3px solid var(--grid-vowel);
             background-color: var(--grid-empty);
@@ -110,7 +106,6 @@
             );
         }
 
-        /* 4ª Vogal: Contorno + 2 Linhas Diagonais (X) */
         .cell.vowel-4 {
             border: 3px solid var(--grid-vowel);
             background-color: var(--grid-empty);
@@ -152,6 +147,14 @@
             text-align: center;
             border: 2px solid #ddd;
             border-radius: 5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .debug-info {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            font-family: monospace;
+            margin-bottom: 1.5rem;
         }
 
         .word-display {
@@ -191,8 +194,9 @@
 
     <div id="tester" class="tab-content">
         <div class="input-group">
-            <h2>Escreve a tua sequência fonética</h2>
-            <input type="text" id="text-input" placeholder="Ex: ae1a" oninput="renderText()">
+            <h2>Escreve uma palavra ou sequência</h2>
+            <input type="text" id="text-input" placeholder="Ex: gato rato... " oninput="renderText()">
+            <div id="debug-output" class="debug-info">Código Fonético: -</div>
         </div>
         
         <div id="word-container" class="word-display">
@@ -202,7 +206,7 @@
     <script>
         /* === JAVASCRIPT: Lógica e Estado === */
 
-        // 1. Dicionário das Consoantes (Números do Sistema Major)
+        // 1. Matrizes dos Algarismos (Consoantes Base)
         const dicionario = {
             '0': [0,0,1,1,1,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,1,0,1,0,0,0,1,0,0,0,1,1,1,0,0],
             '1': [0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0],
@@ -216,7 +220,7 @@
             '9': [1,1,1,1,1,1,1,0,0,0,1,0,0,0,1,1,1,1,1,1,1,0,0,0,1,0,0,0,1,1,1,1,1,1,1,0,0,0,1,0,0,0,1,1,1,1,1,1,1]
         };
 
-        // 2. Coordenadas das Vogais Anteriores
+        // 2. Coordenadas das Vogais
         const vogaisAnteriores = {
             'A': [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
             'E': [0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -224,7 +228,6 @@
             'O': [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0]
         };
 
-        // 3. Coordenadas das Vogais Posteriores
         const vogaisPosteriores = {
             'A': [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
             'E': [0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -233,6 +236,46 @@
         };
 
         let editorState = new Array(49).fill(0);
+
+        // MOTOR DE CONVERSÃO FONÉTICA
+        function converterTextoParaSistemaMajor(texto) {
+            let resultado = texto.toUpperCase();
+
+            // Passo 1: Substituição de Dígrafos
+            resultado = resultado.replaceAll('CH', '6');
+            resultado = resultado.replaceAll('LH', '5');
+            resultado = resultado.replaceAll('NH', '2');
+            resultado = resultado.replaceAll('RR', '4');
+
+            // Passo 2: Regras fonéticas contextuais para C e G (antes de E, I)
+            resultado = resultado.replaceAll('CE', '0E');
+            resultado = resultado.replaceAll('CI', '0I');
+            resultado = resultado.replaceAll('GE', '6E');
+            resultado = resultado.replaceAll('GI', '6I');
+
+            // Passo 3: Substituição de Consoantes Individuais Mapeadas
+            const consoantes = {
+                'S': '0', 'Z': '0',
+                'T': '1', 'D': '1',
+                'N': '2',
+                'M': '3',
+                'R': '4',
+                'L': '5',
+                'J': '6', 'X': '6',
+                'K': '7', 'Q': '7', 'C': '7',
+                'F': '8', 'V': '8',
+                'P': '9', 'B': '9'
+            };
+
+            for (let [chave, valor] of Object.entries(consoantes)) {
+                resultado = resultado.replaceAll(chave, valor);
+            }
+
+            // Passo 4: Limpeza (AGORA PRESERVA OS ESPAÇOS: \s)
+            resultado = resultado.replace(/[^AEIO0-9\s]/g, '');
+
+            return resultado;
+        }
 
         // Inicializador do Editor
         function initEditor() {
@@ -266,7 +309,6 @@
             event.currentTarget.classList.add('active');
         }
 
-        // Função de sobreposição de matrizes
         function aplicarVogal(gridBase, gridVogal, estadoVogal) {
             let resultado = [...gridBase];
             for (let i = 0; i < 49; i++) {
@@ -277,31 +319,41 @@
             return resultado;
         }
 
-        // Motor de Parsing e Renderização Dinâmica
+        // Motor de Rendering Dinâmico com Isolamento por Espaço (ATUALIZADO)
         function renderText() {
-            const input = document.getElementById('text-input').value.toUpperCase();
+            const rawInput = document.getElementById('text-input').value;
+            const inputFiltrado = converterTextoParaSistemaMajor(rawInput);
+            
+            document.getElementById('debug-output').innerText = `Código Fonético: ${inputFiltrado || '-'}`;
+
             const container = document.getElementById('word-container');
             container.innerHTML = ''; 
 
-            // Isola blocos silábicos (Ex: AE1A)
-            const blocos = input.match(/[A-Z]*[0-9][A-Z]*/g) || [];
+            // Divide a string pelos espaços para processar cada palavra independentemente
+            const palavras = inputFiltrado.split(/\s+/);
 
-            for (let bloco of blocos) {
-                let numIndex = -1;
-                for (let i = 0; i < bloco.length; i++) {
-                    if (dicionario[bloco[i]]) {
-                        numIndex = i;
-                        break;
+            for (let palavra of palavras) {
+                // Se a palavra estiver vazia (ex: espaço no final), ignora e não renderiza blocos vazios
+                if (!palavra) continue;
+
+                // Extrai os blocos silábicos contidos apenas nesta palavra isolada
+                const blocos = palavra.match(/[A-Z]*[0-9][A-Z]*/g) || [];
+
+                for (let bloco of blocos) {
+                    let numIndex = -1;
+                    for (let i = 0; i < bloco.length; i++) {
+                        if (dicionario[bloco[i]]) {
+                            numIndex = i;
+                            break;
+                        }
                     }
-                }
 
-                if (numIndex !== -1) {
-                    let charNum = bloco[numIndex];
-                    let estadoAtual = [...dicionario[charNum]];
-                    
-                    // Contadores temporais independentes por canal
-                    let ordemAnterior = 0; 
-                    let ordemPosterior = 0; 
+                    if (numIndex !== -1) {
+                        let charNum = bloco[numIndex];
+                        let estadoAtual = [...dicionario[charNum]];
+                        
+                        let ordemAnterior = 0; 
+                        let ordemPosterior = 0; 
 
                     for (let i = 0; i < bloco.length; i++) {
                         if (i === numIndex) continue;
@@ -309,7 +361,6 @@
                         let charVogal = bloco[i];
 
                         if (i < numIndex) {
-                            // Canal das Vogais Anteriores
                             if (vogaisAnteriores[charVogal]) {
                                 let estadoId = 2 + ordemAnterior;
                                 if (estadoId > 5) estadoId = 5; 
@@ -317,7 +368,6 @@
                                 ordemAnterior++;
                             }
                         } else {
-                            // Canal das Vogais Posteriores
                             if (vogaisPosteriores[charVogal]) {
                                 let estadoId = 2 + ordemPosterior;
                                 if (estadoId > 5) estadoId = 5; 
@@ -327,7 +377,8 @@
                         }
                     }
 
-                    container.appendChild(createDisplayGrid(estadoAtual));
+                        container.appendChild(createDisplayGrid(estadoAtual));
+                    }
                 }
             }
         }
@@ -352,7 +403,6 @@
             return grid;
         }
 
-        // Inicialização
         initEditor();
 
     </script>
