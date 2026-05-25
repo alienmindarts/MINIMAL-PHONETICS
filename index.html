@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratório do Alfabeto Visual</title>
+    <style>
+        /* === CSS: Estilos e Layout === */
+        :root {
+            --bg-color: #f4f4f9;
+            --text-color: #333;
+            --grid-empty: #e0e0e0;
+            --grid-filled: #2c3e50; /* Cor Consonantal */
+            --grid-vowel: #e74c3c;  /* Cor Vocálica (Vermelho) */
+            --accent: #3498db;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 { margin-bottom: 2rem; }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            font-size: 1rem;
+            border: none;
+            background: #ddd;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .grid-7x7 {
+            display: grid;
+            grid-template-columns: repeat(7, 30px);
+            grid-template-rows: repeat(7, 30px);
+            gap: 2px;
+            margin: 0 auto 1.5rem auto;
+            width: fit-content;
+        }
+
+        .cell {
+            background-color: var(--grid-empty);
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.1s;
+            box-sizing: border-box; 
+        }
+
+        .cell.active {
+            background-color: var(--grid-filled);
+        }
+
+        /* === SISTEMA DE ESTADOS DAS VOGAIS === */
+        
+        /* 1ª Vogal: Totalmente preenchida */
+        .cell.vowel-1 {
+            background-color: var(--grid-vowel);
+        }
+
+        /* 2ª Vogal: Apenas contorno (Fundo mantém o cinza da grelha) */
+        .cell.vowel-2 {
+            border: 3px solid var(--grid-vowel);
+            background-color: var(--grid-empty);
+        }
+
+        /* 3ª Vogal: Contorno + 1 Linha Diagonal (\) */
+        .cell.vowel-3 {
+            border: 3px solid var(--grid-vowel);
+            background-color: var(--grid-empty);
+            background-image: linear-gradient(
+                to bottom right, 
+                transparent calc(50% - 1.5px), 
+                var(--grid-vowel) calc(50% - 1.5px), 
+                var(--grid-vowel) calc(50% + 1.5px), 
+                transparent calc(50% + 1.5px)
+            );
+        }
+
+        /* 4ª Vogal: Contorno + 2 Linhas Diagonais (X) */
+        .cell.vowel-4 {
+            border: 3px solid var(--grid-vowel);
+            background-color: var(--grid-empty);
+            background-image: 
+                linear-gradient(to bottom right, transparent calc(50% - 1.5px), var(--grid-vowel) calc(50% - 1.5px), var(--grid-vowel) calc(50% + 1.5px), transparent calc(50% + 1.5px)),
+                linear-gradient(to top right, transparent calc(50% - 1.5px), var(--grid-vowel) calc(50% - 1.5px), var(--grid-vowel) calc(50% + 1.5px), transparent calc(50% + 1.5px));
+        }
+
+        .code-output {
+            background: #2d2d2d;
+            color: #a6e22e;
+            padding: 1rem;
+            border-radius: 5px;
+            font-family: monospace;
+            word-break: break-all;
+            margin-bottom: 1rem;
+        }
+
+        button.copy-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            font-size: 1.2rem;
+            width: 400px;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .word-display {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .grid-display .cell {
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Laboratório Fonético Visual</h1>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('editor')">Editor de Caracteres</button>
+        <button class="tab-btn" onclick="switchTab('tester')">Testador de Texto</button>
+    </div>
+
+    <div id="editor" class="tab-content active">
+        <h2 style="text-align: center;">Cria o teu Algarismo</h2>
+        <p style="text-align: center; color: #666;">Clica nos quadrados para desenhar.</p>
+        
+        <div id="editor-grid" class="grid-7x7"></div>
+        
+        <div class="code-output" id="array-output">
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        </div>
+        <div style="text-align: center;">
+            <button class="copy-btn" onclick="copyArray()">Copiar Array</button>
+        </div>
+    </div>
+
+    <div id="tester" class="tab-content">
+        <div class="input-group">
+            <h2>Escreve a tua sequência fonética</h2>
+            <input type="text" id="text-input" placeholder="Ex: ae1a" oninput="renderText()">
+        </div>
+        
+        <div id="word-container" class="word-display">
+        </div>
+    </div>
+
+    <script>
+        /* === JAVASCRIPT: Lógica e Estado === */
+
+        // 1. Dicionário das Consoantes (Números do Sistema Major)
+        const dicionario = {
+            '0': [0,0,1,1,1,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,0,0,1,0,1,0,0,0,1,0,0,0,1,1,1,0,0],
+            '1': [0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0],
+            '2': [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], 
+            '3': [0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,1,1,1,1,1,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0], 
+            '4': [1,0,0,0,0,0,1,0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,1], 
+            '5': [1,0,0,1,0,0,1,0,1,0,1,0,1,0,0,0,1,1,1,0,0,0,0,0,1,0,0,0,0,0,1,1,1,0,0,0,1,0,1,0,1,0,1,0,0,1,0,0,1], 
+            '6': [1,0,0,0,0,0,1,0,1,0,0,0,1,0,0,0,1,0,1,0,0,1,1,1,1,1,1,1,0,0,1,0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,1], 
+            '7': [1,0,0,1,0,0,1,0,1,0,1,0,1,0,0,0,1,1,1,0,0,1,1,1,1,1,1,1,0,0,1,1,1,0,0,0,1,0,1,0,1,0,1,0,0,1,0,0,1], 
+            '8': [1,0,0,1,1,1,1,0,1,0,1,0,0,0,0,0,1,1,0,0,0,1,1,1,1,1,1,1,0,0,1,1,0,0,0,0,1,0,1,0,0,0,1,0,0,1,1,1,1], 
+            '9': [1,1,1,1,1,1,1,0,0,0,1,0,0,0,1,1,1,1,1,1,1,0,0,0,1,0,0,0,1,1,1,1,1,1,1,0,0,0,1,0,0,0,1,1,1,1,1,1,1]
+        };
+
+        // 2. Coordenadas das Vogais Anteriores
+        const vogaisAnteriores = {
+            'A': [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            'E': [0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            'I': [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            'O': [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0]
+        };
+
+        // 3. Coordenadas das Vogais Posteriores
+        const vogaisPosteriores = {
+            'A': [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            'E': [0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            'I': [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+            'O': [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]
+        };
+
+        let editorState = new Array(49).fill(0);
+
+        // Inicializador do Editor
+        function initEditor() {
+            const grid = document.getElementById('editor-grid');
+            grid.innerHTML = '';
+            for (let i = 0; i < 49; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.addEventListener('click', () => {
+                    editorState[i] = editorState[i] === 0 ? 1 : 0;
+                    cell.classList.toggle('active');
+                    updateOutput();
+                });
+                grid.appendChild(cell);
+            }
+        }
+
+        function updateOutput() {
+            document.getElementById('array-output').innerText = `[${editorState.join(',')}]`;
+        }
+
+        function copyArray() {
+            navigator.clipboard.writeText(document.getElementById('array-output').innerText);
+            alert("Array copiado!");
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // Função de sobreposição de matrizes
+        function aplicarVogal(gridBase, gridVogal, estadoVogal) {
+            let resultado = [...gridBase];
+            for (let i = 0; i < 49; i++) {
+                if (gridVogal[i] === 1) {
+                    resultado[i] = estadoVogal; 
+                }
+            }
+            return resultado;
+        }
+
+        // Motor de Parsing e Renderização Dinâmica
+        function renderText() {
+            const input = document.getElementById('text-input').value.toUpperCase();
+            const container = document.getElementById('word-container');
+            container.innerHTML = ''; 
+
+            // Isola blocos silábicos (Ex: AE1A)
+            const blocos = input.match(/[A-Z]*[0-9][A-Z]*/g) || [];
+
+            for (let bloco of blocos) {
+                let numIndex = -1;
+                for (let i = 0; i < bloco.length; i++) {
+                    if (dicionario[bloco[i]]) {
+                        numIndex = i;
+                        break;
+                    }
+                }
+
+                if (numIndex !== -1) {
+                    let charNum = bloco[numIndex];
+                    let estadoAtual = [...dicionario[charNum]];
+                    
+                    // Contadores temporais independentes por canal
+                    let ordemAnterior = 0; 
+                    let ordemPosterior = 0; 
+
+                    for (let i = 0; i < bloco.length; i++) {
+                        if (i === numIndex) continue;
+
+                        let charVogal = bloco[i];
+
+                        if (i < numIndex) {
+                            // Canal das Vogais Anteriores
+                            if (vogaisAnteriores[charVogal]) {
+                                let estadoId = 2 + ordemAnterior;
+                                if (estadoId > 5) estadoId = 5; 
+                                estadoAtual = aplicarVogal(estadoAtual, vogaisAnteriores[charVogal], estadoId);
+                                ordemAnterior++;
+                            }
+                        } else {
+                            // Canal das Vogais Posteriores
+                            if (vogaisPosteriores[charVogal]) {
+                                let estadoId = 2 + ordemPosterior;
+                                if (estadoId > 5) estadoId = 5; 
+                                estadoAtual = aplicarVogal(estadoAtual, vogaisPosteriores[charVogal], estadoId);
+                                ordemPosterior++;
+                            }
+                        }
+                    }
+
+                    container.appendChild(createDisplayGrid(estadoAtual));
+                }
+            }
+        }
+
+        // Construtor Visual das Grelhas de Saída
+        function createDisplayGrid(arrayEstado) {
+            const grid = document.createElement('div');
+            grid.classList.add('grid-7x7', 'grid-display');
+
+            for (let i = 0; i < 49; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                
+                if (arrayEstado[i] === 1) cell.classList.add('active');
+                else if (arrayEstado[i] === 2) cell.classList.add('vowel-1');
+                else if (arrayEstado[i] === 3) cell.classList.add('vowel-2');
+                else if (arrayEstado[i] === 4) cell.classList.add('vowel-3');
+                else if (arrayEstado[i] === 5) cell.classList.add('vowel-4');
+                
+                grid.appendChild(cell);
+            }
+            return grid;
+        }
+
+        // Inicialização
+        initEditor();
+
+    </script>
+</body>
+</html>
