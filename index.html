@@ -279,8 +279,12 @@
             text-align: center;
             font-size: 0.75rem;
             font-family: monospace;
-            margin-top: 4px;
+            margin-top: 2px;
             color: var(--text-color);
+        }
+        .grid-caption-text {
+            font-style: italic;
+            color: #888;
         }
 
         .grid-wrapper {
@@ -310,7 +314,8 @@
         <label>Espaço <input type="range" id="gap-slider" min="0" max="40" step="1" value="15"><span id="gap-val">15</span>px</label>
         <label>Quebra <input type="range" id="row-gap-slider" min="0" max="40" step="1" value="15"><span id="row-gap-val">15</span>px</label>
         <label>Interno <input type="range" id="internal-slider" min="0" max="10" step="1" value="2"><span id="internal-val">2</span>px</label>
-        <label>Legendas <input type="checkbox" id="legend-toggle" checked></label>
+        <label>Código <input type="checkbox" id="legend-code-toggle" checked></label>
+        <label>Texto <input type="checkbox" id="legend-text-toggle" checked></label>
         <button onclick="resetColors()">Restaurar</button>
     </div>
 
@@ -654,12 +659,22 @@
                         const wrapper = document.createElement('div');
                         wrapper.classList.add('grid-wrapper');
                         wrapper.appendChild(createDisplayGrid(estadoAtual));
-                        if (document.getElementById('legend-toggle').checked) {
-                            const caption = document.createElement('div');
-                            caption.classList.add('grid-caption');
-                            const original = originais[bIdx] || '';
-                            caption.textContent = original ? `(${bloco}) ${original}` : bloco;
-                            wrapper.appendChild(caption);
+
+                        const showCode = document.getElementById('legend-code-toggle').checked;
+                        const showText = document.getElementById('legend-text-toggle').checked;
+                        const original = originais[bIdx] || '';
+
+                        if (showCode) {
+                            const codeCap = document.createElement('div');
+                            codeCap.classList.add('grid-caption', 'grid-caption-code');
+                            codeCap.textContent = `(${bloco})`;
+                            wrapper.appendChild(codeCap);
+                        }
+                        if (showText && original) {
+                            const textCap = document.createElement('div');
+                            textCap.classList.add('grid-caption', 'grid-caption-text');
+                            textCap.textContent = original;
+                            wrapper.appendChild(textCap);
                         }
                         container.appendChild(wrapper);
                     }
@@ -780,11 +795,19 @@
                 localStorage.setItem('--cell-gap', val);
                 iv.textContent = is.value;
             });
-            const legendToggle = document.getElementById('legend-toggle');
-            const legendStored = localStorage.getItem('show-legend');
-            if (legendStored !== null) legendToggle.checked = legendStored === 'true';
-            legendToggle.addEventListener('change', () => {
-                localStorage.setItem('show-legend', legendToggle.checked);
+            const codeToggle = document.getElementById('legend-code-toggle');
+            const codeStored = localStorage.getItem('show-legend-code');
+            if (codeStored !== null) codeToggle.checked = codeStored === 'true';
+            codeToggle.addEventListener('change', () => {
+                localStorage.setItem('show-legend-code', codeToggle.checked);
+                if (document.getElementById('text-input').value) renderText();
+            });
+
+            const textToggle = document.getElementById('legend-text-toggle');
+            const textStored = localStorage.getItem('show-legend-text');
+            if (textStored !== null) textToggle.checked = textStored === 'true';
+            textToggle.addEventListener('change', () => {
+                localStorage.setItem('show-legend-text', textToggle.checked);
                 if (document.getElementById('text-input').value) renderText();
             });
         }
@@ -832,13 +855,17 @@ const cellSize = parseInt(getComputedStyle(document.documentElement).getProperty
              const innerGapVal = isNaN(innerGap) ? 2 : innerGap;
              const gridPixelSize = 7 * cellSizeVal + 6 * innerGapVal;
              const captionH = 14;
+             const showCode = document.getElementById('legend-code-toggle').checked;
+             const showText = document.getElementById('legend-text-toggle').checked;
+             const captionLines = (showCode ? 1 : 0) + (showText ? 1 : 0);
+             const captionHeight = captionLines * captionH;
              const cols = blocksPerLineVal;
              const rows = Math.ceil(grids.length / cols);
-             const showLegend = document.getElementById('legend-toggle').checked;
              const canvasW = cols * gridPixelSize + (cols - 1) * blockGapVal;
-             const canvasH = rows * (gridPixelSize + (showLegend ? captionH : 0)) + (rows - 1) * rowGapVal;
+             const canvasH = rows * (gridPixelSize + captionHeight) + (rows - 1) * rowGapVal;
              const bg = getComputedStyle(document.documentElement).getPropertyValue('--content-bg').trim() || '#fff';
              const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim() || '#333';
+
              if (format === 'svg') {
                  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}" viewBox="0 0 ${canvasW} ${canvasH}">`;
                  svg += `<rect width="${canvasW}" height="${canvasH}" fill="${bg}"/>`;
@@ -846,9 +873,10 @@ const cellSize = parseInt(getComputedStyle(document.documentElement).getProperty
                      const r = Math.floor(idx / cols);
                      const c = idx % cols;
                      const ox = c * (gridPixelSize + blockGapVal);
-                     const oy = r * (gridPixelSize + (showLegend ? captionH : 0)) + r * rowGapVal;
+                     const oy = r * (gridPixelSize + captionHeight) + r * rowGapVal;
                      const wrapper = wrappers[idx];
-                     const captionText = (showLegend && wrapper) ? (wrapper.querySelector('.grid-caption')?.textContent || '') : '';
+                     const codeText = showCode ? (wrapper.querySelector('.grid-caption-code')?.textContent || '') : '';
+                     const textText = showText ? (wrapper.querySelector('.grid-caption-text')?.textContent || '') : '';
                      const cells = gridEl.querySelectorAll('.cell');
                      cells.forEach((cell, i) => {
                          const cx = ox + (i % 7) * (cellSizeVal + innerGapVal);
@@ -869,8 +897,12 @@ const cellSize = parseInt(getComputedStyle(document.documentElement).getProperty
                              svg += `<line x1="${cx+cellSizeVal}" y1="${cy}" x2="${cx}" y2="${cy+cellSizeVal}" stroke="${vcol}" stroke-width="2"/>`;
                          }
                      });
-                     if (showLegend && captionText) {
-                         svg += `<text x="${ox + gridPixelSize/2}" y="${oy + gridPixelSize + 12}" text-anchor="middle" font-family="monospace" font-size="12" fill="${textColor}">${captionText}</text>`;
+                     if (codeText) {
+                         svg += `<text x="${ox + gridPixelSize/2}" y="${oy + gridPixelSize + 12}" text-anchor="middle" font-family="monospace" font-size="12" fill="${textColor}">${codeText}</text>`;
+                     }
+                     if (textText) {
+                         const lineY = oy + gridPixelSize + (codeText ? captionH + 12 : 12);
+                         svg += `<text x="${ox + gridPixelSize/2}" y="${lineY}" text-anchor="middle" font-family="monospace" font-size="12" fill="#888" font-style="italic">${textText}</text>`;
                      }
                  });
                  svg += `</svg>`;
@@ -893,9 +925,10 @@ const cellSize = parseInt(getComputedStyle(document.documentElement).getProperty
                  const r = Math.floor(idx / cols);
                  const c = idx % cols;
                  const ox = c * (gridPixelSize + blockGapVal);
-                 const oy = r * (gridPixelSize + (showLegend ? captionH : 0)) + r * rowGapVal;
+                 const oy = r * (gridPixelSize + captionHeight) + r * rowGapVal;
                  const wrapper = wrappers[idx];
-                 const captionText = (showLegend && wrapper) ? (wrapper.querySelector('.grid-caption')?.textContent || '') : '';
+                 const codeText = showCode ? (wrapper.querySelector('.grid-caption-code')?.textContent || '') : '';
+                 const textText = showText ? (wrapper.querySelector('.grid-caption-text')?.textContent || '') : '';
                  const cells = gridEl.querySelectorAll('.cell');
                  cells.forEach((cell, i) => {
                      const cx = ox + (i % 7) * (cellSizeVal + innerGapVal);
@@ -923,11 +956,17 @@ const cellSize = parseInt(getComputedStyle(document.documentElement).getProperty
                          ctx.stroke();
                      }
                  });
-                 if (showLegend && captionText) {
+                 ctx.textAlign = 'center';
+                 if (codeText) {
                      ctx.fillStyle = textColor;
                      ctx.font = '12px monospace';
-                     ctx.textAlign = 'center';
-                     ctx.fillText(captionText, ox + gridPixelSize/2, oy + gridPixelSize + 12);
+                     ctx.fillText(codeText, ox + gridPixelSize/2, oy + gridPixelSize + 12);
+                 }
+                 if (textText) {
+                     ctx.fillStyle = '#888';
+                     ctx.font = 'italic 12px monospace';
+                     const lineY = oy + gridPixelSize + (codeText ? captionH + 12 : 12);
+                     ctx.fillText(textText, ox + gridPixelSize/2, lineY);
                  }
 });
              let mime = 'image/png';
