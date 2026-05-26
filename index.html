@@ -866,6 +866,9 @@ const cellSize = parseInt(getComputedStyle(document.documentElement).getProperty
              const bg = getComputedStyle(document.documentElement).getPropertyValue('--content-bg').trim() || '#fff';
              const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim() || '#333';
 
+             const inputText = document.getElementById('text-input').value.trim() || 'blocos';
+             const baseName = inputText.replace(/[\\/:*?"<>|]/g, '_');
+
              if (format === 'svg') {
                  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}" viewBox="0 0 ${canvasW} ${canvasH}">`;
                  svg += `<rect width="${canvasW}" height="${canvasH}" fill="${bg}"/>`;
@@ -910,7 +913,7 @@ const cellSize = parseInt(getComputedStyle(document.documentElement).getProperty
                  const url = URL.createObjectURL(blob);
                  const a = document.createElement('a');
                  a.href = url;
-                 a.download = 'blocos.svg';
+                 a.download = `${baseName}.svg`;
                  a.click();
                  URL.revokeObjectURL(url);
                  return;
@@ -975,7 +978,7 @@ const cellSize = parseInt(getComputedStyle(document.documentElement).getProperty
              const url = canvas.toDataURL(mime, 0.92);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `blocos.${format}`;
+            a.download = `${baseName}.${format}`;
             a.click();
         }
 
