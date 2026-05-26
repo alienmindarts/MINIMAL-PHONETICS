@@ -191,11 +191,11 @@
     <h1>Laboratório Fonético Visual</h1>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('editor')">Editor de Caracteres</button>
-        <button class="tab-btn" onclick="switchTab('tester')">Testador de Texto</button>
+        <button class="tab-btn" onclick="switchTab('editor')">Editor de Caracteres</button>
+        <button class="tab-btn active" onclick="switchTab('tester')">Testador de Texto</button>
     </div>
 
-    <div id="editor" class="tab-content active">
+    <div id="editor" class="tab-content">
         <h2 style="text-align: center;">Cria o teu Algarismo</h2>
         <p style="text-align: center; color: #666;">Clica nos quadrados para desenhar.</p>
         
@@ -209,7 +209,7 @@
         </div>
     </div>
 
-    <div id="tester" class="tab-content">
+    <div id="tester" class="tab-content active">
         <div class="input-group">
             <h2>Escreve uma palavra ou sequência</h2>
             
@@ -301,7 +301,7 @@
             resultado = resultado.replaceAll('CI', '0I');
             resultado = resultado.replaceAll('GE', '6E');
             resultado = resultado.replaceAll('GI', '6I');
-
+        
             const consoantes = {
                 'S': '0', 'Z': '0',
                 'T': '1', 'D': '1',
