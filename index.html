@@ -8,6 +8,7 @@
         /* === CSS: Estilos e Layout === */
         :root {
             --bg-color: #f4f4f9;
+            --content-bg: #ffffff;
             --text-color: #333;
             --grid-empty: #e0e0e0;
             --grid-filled: #2c3e50; /* Cor Consonantal */
@@ -57,7 +58,7 @@
             display: none;
             width: 100%;
             max-width: 800px;
-            background: white;
+            background: var(--content-bg);
             padding: 2rem;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
@@ -254,7 +255,9 @@
 
     <div class="color-panel">
         <span>Cores:</span>
-        <label>Fundo <input type="color" id="color-bg" value="#f4f4f9"></label>
+        <label>Página <input type="color" id="color-page" value="#f4f4f9"></label>
+        <label>Caixa <input type="color" id="color-box" value="#ffffff"></label>
+        <label>Números <input type="color" id="color-filled" value="#2c3e50"></label>
         <label>Vazias <input type="color" id="color-empty" value="#e0e0e0"></label>
         <label>Vogais <input type="color" id="color-vowel" value="#e74c3c"></label>
         <label>Arredondar <input type="range" id="radius-slider" min="0" max="15" step="1" value="3"><span id="radius-val">3</span>px</label>
@@ -521,7 +524,7 @@
         }
 
         function loadColors() {
-            const defs = {'--bg-color':'#f4f4f9','--grid-empty':'#e0e0e0','--grid-vowel':'#e74c3c','--cell-radius':'3px','--cell-size':'30px','--blocks-per-line':'6','--block-gap':'15px'};
+            const defs = {'--bg-color':'#f4f4f9','--content-bg':'#ffffff','--grid-empty':'#e0e0e0','--grid-filled':'#2c3e50','--grid-vowel':'#e74c3c','--cell-radius':'3px','--cell-size':'30px','--blocks-per-line':'6','--block-gap':'15px'};
             for (let k in defs) {
                 const v = localStorage.getItem(k) || defs[k];
                 document.documentElement.style.setProperty(k, v);
@@ -530,8 +533,8 @@
 
         function initColorControls() {
             loadColors();
-            const ids = {bg:'color-bg', empty:'color-empty', vowel:'color-vowel'};
-            const vars = {bg:'--bg-color', empty:'--grid-empty', vowel:'--grid-vowel'};
+            const ids = {page:'color-page', box:'color-box', empty:'color-empty', filled:'color-filled', vowel:'color-vowel'};
+            const vars = {page:'--bg-color', box:'--content-bg', empty:'--grid-empty', filled:'--grid-filled', vowel:'--grid-vowel'};
             for (let key in ids) {
                 const inp = document.getElementById(ids[key]);
                 const varn = vars[key];
@@ -592,13 +595,15 @@
         }
 
         function resetColors() {
-            const defs = {'--bg-color':'#f4f4f9','--grid-empty':'#e0e0e0','--grid-vowel':'#e74c3c','--cell-radius':'3px','--cell-size':'30px','--blocks-per-line':'6','--block-gap':'15px'};
+            const defs = {'--bg-color':'#f4f4f9','--content-bg':'#ffffff','--grid-empty':'#e0e0e0','--grid-filled':'#2c3e50','--grid-vowel':'#e74c3c','--cell-radius':'3px','--cell-size':'30px','--blocks-per-line':'6','--block-gap':'15px'};
             for (let k in defs) {
                 document.documentElement.style.setProperty(k, defs[k]);
                 localStorage.removeItem(k);
             }
-            document.getElementById('color-bg').value = defs['--bg-color'];
+            document.getElementById('color-page').value = defs['--bg-color'];
+            document.getElementById('color-box').value = defs['--content-bg'];
             document.getElementById('color-empty').value = defs['--grid-empty'];
+            document.getElementById('color-filled').value = defs['--grid-filled'];
             document.getElementById('color-vowel').value = defs['--grid-vowel'];
             document.getElementById('radius-slider').value = 3;
             document.getElementById('radius-val').textContent = 3;
