@@ -499,6 +499,33 @@
             return resultado;
         }
 
+        function extrairOriginal(bruto, blocos) {
+    const semAcentos = bruto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const chars = semAcentos.split('');
+    const mapNumToCons = {
+        '0': ['S','Z','Ç'], '1': ['T','D'], '2': ['N'], '3': ['M'],
+        '4': ['R'], '5': ['R','L'], '6': ['J','X','G'], '7': ['K','Q','C','G'],
+        '8': ['F','V'], '9': ['P','B']
+    };
+    const vogalMap = {'A':'A','E':'E','I':'Y','O':'U'};
+    const silabas = [];
+    let pos = 0;
+    for (let bloco of blocos) {
+        let len = 0;
+        for (let ch of bloco) {
+            if (/[0-9]/.test(ch)) {
+                const candidates = mapNumToCons[ch] || [];
+                len += candidates.length;
+            } else {
+                len += 1;
+            }
+        }
+        silabas.push(chars.slice(pos, pos+len).join('').toLowerCase().replace(/y/g,'i').replace(/u/g,'o'));
+        pos += len;
+    }
+    return silabas;
+}
+
         // Motor de Rendering Dinâmico com Isolamento por Espaço
         function renderText() {
             const rawInput = document.getElementById('text-input').value;
@@ -510,13 +537,18 @@
             container.innerHTML = ''; 
 
             const palavras = inputFiltrado.split(/\s+/);
+            const palavrasOriginais = rawInput.split(/\s+/);
 
-            for (let palavra of palavras) {
+            for (let palavraIdx = 0; palavraIdx < palavras.length; palavraIdx++) {
+                let palavra = palavras[palavraIdx];
                 if (!palavra) continue;
+                const originalPalavra = palavrasOriginais[palavraIdx] || '';
 
                 const blocos = palavra.match(/[A-Z]*[0-9][A-Z]*/g) || [];
+                const originais = extrairOriginal(originalPalavra, blocos);
 
-                for (let bloco of blocos) {
+                for (let bIdx = 0; bIdx < blocos.length; bIdx++) {
+                    let bloco = blocos[bIdx];
                     let numIndex = -1;
                     for (let i = 0; i < bloco.length; i++) {
                         if (dicionario[bloco[i]]) {
@@ -560,7 +592,8 @@
                         if (document.getElementById('legend-toggle').checked) {
                             const caption = document.createElement('div');
                             caption.classList.add('grid-caption');
-                            caption.textContent = bloco;
+                            const original = originais[bIdx] || '';
+                            caption.textContent = original ? `(${bloco}) ${original}` : bloco;
                             wrapper.appendChild(caption);
                         }
                         container.appendChild(wrapper);
