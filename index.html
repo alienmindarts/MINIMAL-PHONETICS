@@ -500,29 +500,94 @@
         }
 
         function extrairOriginal(bruto, blocos) {
-    const semAcentos = bruto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    const chars = semAcentos.split('');
-    const mapNumToCons = {
-        '0': ['S','Z','Ç'], '1': ['T','D'], '2': ['N'], '3': ['M'],
-        '4': ['R'], '5': ['R','L'], '6': ['J','X','G'], '7': ['K','Q','C','G'],
-        '8': ['F','V'], '9': ['P','B']
+    // Construir um array paralelo: para cada caracter do bruto,
+    // guardar o caracter normalizado (sem acentos, uppercase) e o índice original.
+    // Isto permite mapear posições correctamente mesmo com acentos.
+    const charMap = []; // [{orig: índice no bruto, ch: caracter normalizado}]
+    for (let i = 0; i < bruto.length; i++) {
+        // Normalizar cada caracter individualmente
+        let ch = bruto[i];
+        // Tratar Ç/ç antes de normalizar (como o motor de conversão faz)
+        if (ch === 'ç' || ch === 'Ç') {
+            charMap.push({ orig: i, ch: '0', isCedilha: true });
+            continue;
+        }
+        let norm = ch.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+        if (norm.length === 1) {
+            charMap.push({ orig: i, ch: norm });
+        }
+        // Se norm está vazio (caracter de combinação isolado), saltar
+    }
+
+    // Dígrafos que o motor de conversão colapsa num único dígito
+    const digrafos = { 'CH': '6', 'LH': '5', 'NH': '2', 'RR': '4' };
+    // Consoantes simples → dígito
+    const consoantes = {
+        'S': '0', 'Z': '0',
+        'T': '1', 'D': '1',
+        'N': '2',
+        'M': '3',
+        'R': '4',
+        'L': '5',
+        'J': '6', 'X': '6',
+        'K': '7', 'Q': '7', 'C': '7', 'G': '7',
+        'F': '8', 'V': '8',
+        'P': '9', 'B': '9'
     };
-    const vogalMap = {'A':'A','E':'E','I':'Y','O':'U'};
+    // Vogais reconhecidas pelo motor
+    const vogais = new Set(['A', 'E', 'I', 'O', 'U', 'Y']);
+    // Contextos especiais: CE→0E, CI→0I, GE→6E, GI→6I
+    const contextual = { 'CE': '0', 'CI': '0', 'GE': '6', 'GI': '6' };
+
     const silabas = [];
-    let pos = 0;
+    let pos = 0; // posição no charMap
+
     for (let bloco of blocos) {
-        let len = 0;
-        for (let ch of bloco) {
-            if (/[0-9]/.test(ch)) {
-                const candidates = mapNumToCons[ch] || [];
-                len += candidates.length;
+        let startOrig = pos < charMap.length ? charMap[pos].orig : bruto.length;
+        let bIdx = 0;
+
+        while (bIdx < bloco.length && pos < charMap.length) {
+            const bCh = bloco[bIdx];
+            const cur = charMap[pos];
+
+            // Saltar caracteres no original que não são consoantes, vogais, nem H
+            // (ex: W, ou outros não mapeados pelo motor)
+            if (!cur.isCedilha && !vogais.has(cur.ch) && !consoantes[cur.ch] && cur.ch !== 'H') {
+                pos++;
+                continue;
+            }
+
+            if (/[0-9]/.test(bCh)) {
+                // O caracter do bloco é um dígito — corresponde a uma consoante (ou dígrafo) no original
+                // Verificar se é cedilha (Ç → 0)
+                if (cur.isCedilha && bCh === '0') {
+                    pos += 1;
+                    bIdx++;
+                    continue;
+                }
+                // Verificar dígrafo
+                const nextCh = (pos + 1 < charMap.length) ? charMap[pos + 1].ch : '';
+                const pair = cur.ch + nextCh;
+                if (digrafos[pair] === bCh) {
+                    pos += 2;
+                } else if (contextual[pair] === bCh) {
+                    // CE, CI, GE, GI: consome só a consoante, a vogal será consumida a seguir
+                    pos += 1;
+                } else {
+                    pos += 1;
+                }
+                bIdx++;
             } else {
-                len += 1;
+                // O caracter do bloco é uma vogal — consome 1 caracter no original
+                pos++;
+                bIdx++;
             }
         }
-        silabas.push(chars.slice(pos, pos+len).join('').toLowerCase().replace(/y/g,'i').replace(/u/g,'o'));
-        pos += len;
+
+        let endOrig = pos < charMap.length ? charMap[pos].orig : bruto.length;
+        silabas.push(bruto.slice(startOrig, endOrig).toLowerCase());
     }
+
     return silabas;
 }
 
