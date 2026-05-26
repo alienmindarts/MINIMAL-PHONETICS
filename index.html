@@ -16,8 +16,10 @@
             --accent: #3498db;
             --cell-radius: 3px;
             --cell-size: 30px;
+            --cell-gap: 2px;
             --blocks-per-line: 6;
             --block-gap: 15px;
+            --block-row-gap: 15px;
         }
 
         body {
@@ -72,8 +74,8 @@
             display: grid;
             grid-template-columns: repeat(7, var(--cell-size));
             grid-template-rows: repeat(7, var(--cell-size));
-            gap: 2px;
-            margin: 0 auto 1.5rem auto;
+            gap: var(--cell-gap);
+            margin: 0 auto;
             width: fit-content;
         }
 
@@ -182,7 +184,8 @@
         .word-display {
             display: grid;
             grid-template-columns: repeat(var(--blocks-per-line), auto);
-            gap: var(--block-gap);
+            column-gap: var(--block-gap);
+            row-gap: var(--block-row-gap);
             justify-content: center;
         }
 
@@ -247,6 +250,30 @@
             font-family: monospace;
             font-size: 0.85em;
         }
+        .color-panel #internal-val {
+            min-width: 1.2em;
+            text-align: right;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+        .color-panel #row-gap-val {
+            min-width: 1.2em;
+            text-align: right;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+
+        .export-section {
+            margin-top: 1rem;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .export-section select {
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -264,6 +291,8 @@
         <label>Tamanho <input type="range" id="size-slider" min="10" max="50" step="1" value="30"><span id="size-val">30</span>px</label>
         <label>Por linha <input type="range" id="perline-slider" min="1" max="15" step="1" value="6"><span id="perline-val">6</span></label>
         <label>Espaço <input type="range" id="gap-slider" min="0" max="40" step="1" value="15"><span id="gap-val">15</span>px</label>
+        <label>Quebra <input type="range" id="row-gap-slider" min="0" max="40" step="1" value="15"><span id="row-gap-val">15</span>px</label>
+        <label>Interno <input type="range" id="internal-slider" min="0" max="10" step="1" value="2"><span id="internal-val">2</span>px</label>
         <button onclick="resetColors()">Restaurar</button>
     </div>
 
@@ -297,6 +326,16 @@
         </div>
         
         <div id="word-container" class="word-display">
+        </div>
+
+        <div class="export-section">
+            <button onclick="exportBlocks()">Exportar Blocos</button>
+            <select id="export-format">
+                <option value="png">PNG</option>
+                <option value="jpeg">JPEG</option>
+                <option value="webp">WEBP</option>
+                <option value="svg">SVG</option>
+            </select>
         </div>
     </div>
 
@@ -524,7 +563,7 @@
         }
 
         function loadColors() {
-            const defs = {'--bg-color':'#f4f4f9','--content-bg':'#ffffff','--grid-empty':'#e0e0e0','--grid-filled':'#2c3e50','--grid-vowel':'#e74c3c','--cell-radius':'3px','--cell-size':'30px','--blocks-per-line':'6','--block-gap':'15px'};
+            const defs = {'--bg-color':'#f4f4f9','--content-bg':'#ffffff','--grid-empty':'#e0e0e0','--grid-filled':'#2c3e50','--grid-vowel':'#e74c3c','--cell-radius':'3px','--cell-size':'30px','--cell-gap':'2px','--blocks-per-line':'6','--block-gap':'15px','--block-row-gap':'15px'};
             for (let k in defs) {
                 const v = localStorage.getItem(k) || defs[k];
                 document.documentElement.style.setProperty(k, v);
@@ -592,10 +631,34 @@
                 localStorage.setItem('--block-gap', val);
                 gv.textContent = gs.value;
             });
+            const rgs = document.getElementById('row-gap-slider');
+            const rgv = document.getElementById('row-gap-val');
+            let rg = getComputedStyle(document.documentElement).getPropertyValue('--block-row-gap').trim() || '15px';
+            let rgn = parseInt(rg) || 15;
+            rgs.value = rgn;
+            rgv.textContent = rgn;
+            rgs.addEventListener('input', () => {
+                const val = rgs.value + 'px';
+                document.documentElement.style.setProperty('--block-row-gap', val);
+                localStorage.setItem('--block-row-gap', val);
+                rgv.textContent = rgs.value;
+            });
+            const is = document.getElementById('internal-slider');
+            const iv = document.getElementById('internal-val');
+            let ig = getComputedStyle(document.documentElement).getPropertyValue('--cell-gap').trim() || '2px';
+            let ign = parseInt(ig) || 2;
+            is.value = ign;
+            iv.textContent = ign;
+            is.addEventListener('input', () => {
+                const val = is.value + 'px';
+                document.documentElement.style.setProperty('--cell-gap', val);
+                localStorage.setItem('--cell-gap', val);
+                iv.textContent = is.value;
+            });
         }
 
         function resetColors() {
-            const defs = {'--bg-color':'#f4f4f9','--content-bg':'#ffffff','--grid-empty':'#e0e0e0','--grid-filled':'#2c3e50','--grid-vowel':'#e74c3c','--cell-radius':'3px','--cell-size':'30px','--blocks-per-line':'6','--block-gap':'15px'};
+            const defs = {'--bg-color':'#f4f4f9','--content-bg':'#ffffff','--grid-empty':'#e0e0e0','--grid-filled':'#2c3e50','--grid-vowel':'#e74c3c','--cell-radius':'3px','--cell-size':'30px','--cell-gap':'2px','--blocks-per-line':'6','--block-gap':'15px','--block-row-gap':'15px'};
             for (let k in defs) {
                 document.documentElement.style.setProperty(k, defs[k]);
                 localStorage.removeItem(k);
@@ -613,6 +676,115 @@
             document.getElementById('perline-val').textContent = 6;
             document.getElementById('gap-slider').value = 15;
             document.getElementById('gap-val').textContent = 15;
+            document.getElementById('row-gap-slider').value = 15;
+            document.getElementById('row-gap-val').textContent = 15;
+            document.getElementById('internal-slider').value = 2;
+            document.getElementById('internal-val').textContent = 2;
+        }
+
+        function exportBlocks() {
+            const container = document.getElementById('word-container');
+            if (!container || !container.children.length) { alert('Nada para exportar'); return; }
+            const format = document.getElementById('export-format').value;
+            const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')) || 30;
+            const blockGap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--block-gap')) || 15;
+            const rowGap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--block-row-gap')) || 15;
+            const blocksPerLine = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--blocks-per-line')) || 6;
+            const grids = Array.from(container.querySelectorAll('.grid-7x7'));
+            const innerGap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-gap')) || 2;
+            const gridPixelSize = 7 * cellSize + 6 * innerGap;
+            const cols = blocksPerLine;
+            const rows = Math.ceil(grids.length / cols);
+            const canvasW = cols * gridPixelSize + (cols - 1) * blockGap;
+            const canvasH = rows * gridPixelSize + (rows - 1) * rowGap;
+            if (format === 'svg') {
+                let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}" viewBox="0 0 ${canvasW} ${canvasH}">`;
+                const bg = getComputedStyle(document.documentElement).getPropertyValue('--content-bg').trim() || '#fff';
+                svg += `<rect width="${canvasW}" height="${canvasH}" fill="${bg}"/>`;
+                grids.forEach((gridEl, idx) => {
+                    const r = Math.floor(idx / cols);
+                    const c = idx % cols;
+                    const ox = c * (gridPixelSize + blockGap);
+                    const oy = r * (gridPixelSize + rowGap);
+                    const cells = gridEl.querySelectorAll('.cell');
+                    cells.forEach((cell, i) => {
+                        const cx = ox + (i % 7) * (cellSize + innerGap);
+                        const cy = oy + Math.floor(i / 7) * (cellSize + innerGap);
+                        const style = getComputedStyle(cell);
+                        const fill = style.backgroundColor;
+                        svg += `<rect x="${cx}" y="${cy}" width="${cellSize}" height="${cellSize}" fill="${fill}"/>`;
+                        if (cell.classList.contains('vowel-2') || cell.classList.contains('vowel-3') || cell.classList.contains('vowel-4')) {
+                            const border = style.borderColor || '#e74c3c';
+                            svg += `<rect x="${cx}" y="${cy}" width="${cellSize}" height="${cellSize}" fill="none" stroke="${border}" stroke-width="3"/>`;
+                        }
+                        if (cell.classList.contains('vowel-3') || cell.classList.contains('vowel-4')) {
+                            const vcol = style.borderColor || '#e74c3c';
+                            svg += `<line x1="${cx}" y1="${cy}" x2="${cx+cellSize}" y2="${cy+cellSize}" stroke="${vcol}" stroke-width="2"/>`;
+                        }
+                        if (cell.classList.contains('vowel-4')) {
+                            const vcol = style.borderColor || '#e74c3c';
+                            svg += `<line x1="${cx+cellSize}" y1="${cy}" x2="${cx}" y2="${cy+cellSize}" stroke="${vcol}" stroke-width="2"/>`;
+                        }
+                    });
+                });
+                svg += `</svg>`;
+                const blob = new Blob([svg], {type:'image/svg+xml'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'blocos.svg';
+                a.click();
+                URL.revokeObjectURL(url);
+                return;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = canvasW;
+            canvas.height = canvasH;
+            const ctx = canvas.getContext('2d');
+            const bg = getComputedStyle(document.documentElement).getPropertyValue('--content-bg').trim() || '#ffffff';
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, canvasW, canvasH);
+            grids.forEach((gridEl, idx) => {
+                const r = Math.floor(idx / cols);
+                const c = idx % cols;
+                const ox = c * (gridPixelSize + blockGap);
+                const oy = r * (gridPixelSize + rowGap);
+                const cells = gridEl.querySelectorAll('.cell');
+                cells.forEach((cell, i) => {
+                    const cx = ox + (i % 7) * (cellSize + innerGap);
+                    const cy = oy + Math.floor(i / 7) * (cellSize + innerGap);
+                    const style = getComputedStyle(cell);
+                    ctx.fillStyle = style.backgroundColor;
+                    ctx.fillRect(cx, cy, cellSize, cellSize);
+                    if (cell.classList.contains('vowel-2') || cell.classList.contains('vowel-3') || cell.classList.contains('vowel-4')) {
+                        ctx.strokeStyle = style.borderColor || '#e74c3c';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(cx, cy, cellSize, cellSize);
+                    }
+                    if (cell.classList.contains('vowel-3') || cell.classList.contains('vowel-4')) {
+                        ctx.strokeStyle = style.borderColor || '#e74c3c';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(cx, cy);
+                        ctx.lineTo(cx + cellSize, cy + cellSize);
+                        ctx.stroke();
+                    }
+                    if (cell.classList.contains('vowel-4')) {
+                        ctx.beginPath();
+                        ctx.moveTo(cx + cellSize, cy);
+                        ctx.lineTo(cx, cy + cellSize);
+                        ctx.stroke();
+                    }
+                });
+            });
+            let mime = 'image/png';
+            if (format === 'jpeg') mime = 'image/jpeg';
+            if (format === 'webp') mime = 'image/webp';
+            const url = canvas.toDataURL(mime, 0.92);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `blocos.${format}`;
+            a.click();
         }
 
         initEditor();
