@@ -753,119 +753,122 @@
             const container = document.getElementById('word-container');
             if (!container || !container.children.length) { alert('Nada para exportar'); return; }
             const format = document.getElementById('export-format').value;
-            const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size')) || 30;
-            const blockGap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--block-gap')) || 15;
-            const rowGap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--block-row-gap')) || 15;
-            const blocksPerLine = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--blocks-per-line')) || 6;
-            const wrappers = Array.from(container.querySelectorAll('.grid-wrapper'));
-            const grids = wrappers.map(w => w.querySelector('.grid-7x7'));
-            const innerGap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-gap')) || 2;
-            const gridPixelSize = 7 * cellSize + 6 * innerGap;
-            const captionH = 14;
-            const cols = blocksPerLine;
-            const rows = Math.ceil(grids.length / cols);
-            const showLegend = document.getElementById('legend-toggle').checked;
-            const canvasW = cols * gridPixelSize + (cols - 1) * blockGap;
-            const canvasH = rows * (gridPixelSize + (showLegend ? captionH : 0)) + (rows - 1) * rowGap;
-            if (format === 'svg') {
-                let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}" viewBox="0 0 ${canvasW} ${canvasH}">`;
-                const bg = getComputedStyle(document.documentElement).getPropertyValue('--content-bg').trim() || '#fff';
-                svg += `<rect width="${canvasW}" height="${canvasH}" fill="${bg}"/>`;
-                grids.forEach((gridEl, idx) => {
-                    const r = Math.floor(idx / cols);
-                    const c = idx % cols;
-                    const ox = c * (gridPixelSize + blockGap);
-                    const oy = r * (gridPixelSize + (showLegend ? captionH : 0)) + r * rowGap;
-                    const wrapper = wrappers[idx];
-                    const captionText = (showLegend && wrapper) ? (wrapper.querySelector('.grid-caption')?.textContent || '') : '';
-                    const cells = gridEl.querySelectorAll('.cell');
-                    cells.forEach((cell, i) => {
-                        const cx = ox + (i % 7) * (cellSize + innerGap);
-                        const cy = oy + Math.floor(i / 7) * (cellSize + innerGap);
-                        const style = getComputedStyle(cell);
-                        const fill = style.backgroundColor;
-                        svg += `<rect x="${cx}" y="${cy}" width="${cellSize}" height="${cellSize}" fill="${fill}"/>`;
-                        if (cell.classList.contains('vowel-2') || cell.classList.contains('vowel-3') || cell.classList.contains('vowel-4')) {
-                            const border = style.borderColor || '#e74c3c';
-                            svg += `<rect x="${cx}" y="${cy}" width="${cellSize}" height="${cellSize}" fill="none" stroke="${border}" stroke-width="3"/>`;
-                        }
-                        if (cell.classList.contains('vowel-3') || cell.classList.contains('vowel-4')) {
-                            const vcol = style.borderColor || '#e74c3c';
-                            svg += `<line x1="${cx}" y1="${cy}" x2="${cx+cellSize}" y2="${cy+cellSize}" stroke="${vcol}" stroke-width="2"/>`;
-                        }
-                        if (cell.classList.contains('vowel-4')) {
-                            const vcol = style.borderColor || '#e74c3c';
-                            svg += `<line x1="${cx+cellSize}" y1="${cy}" x2="${cx}" y2="${cy+cellSize}" stroke="${vcol}" stroke-width="2"/>`;
-                        }
-                    });
-                    if (showLegend && captionText) {
-                        const textCol = textColor;
-                        svg += `<text x="${ox + gridPixelSize/2}" y="${oy + gridPixelSize + 12}" text-anchor="middle" font-family="monospace" font-size="12" fill="${textCol}">${captionText}</text>`;
-                    }
-                });
-                svg += `</svg>`;
-                const blob = new Blob([svg], {type:'image/svg+xml'});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'blocos.svg';
-                a.click();
-                URL.revokeObjectURL(url);
-                return;
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = canvasW;
-            canvas.height = canvasH;
-            const ctx = canvas.getContext('2d');
-            const bg = getComputedStyle(document.documentElement).getPropertyValue('--content-bg').trim() || '#ffffff';
-            ctx.fillStyle = bg;
-            ctx.fillRect(0, 0, canvasW, canvasH);
-            const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim() || '#333';
-            grids.forEach((gridEl, idx) => {
-                const r = Math.floor(idx / cols);
-                const c = idx % cols;
-                const ox = c * (gridPixelSize + blockGap);
-                const oy = r * (gridPixelSize + (showLegend ? captionH : 0)) + r * rowGap;
-                const wrapper = wrappers[idx];
-                const captionText = (showLegend && wrapper) ? (wrapper.querySelector('.grid-caption')?.textContent || '') : '';
-                const cells = gridEl.querySelectorAll('.cell');
-                cells.forEach((cell, i) => {
-                    const cx = ox + (i % 7) * (cellSize + innerGap);
-                    const cy = oy + Math.floor(i / 7) * (cellSize + innerGap);
-                    const style = getComputedStyle(cell);
-                    ctx.fillStyle = style.backgroundColor;
-                    ctx.fillRect(cx, cy, cellSize, cellSize);
-                    if (cell.classList.contains('vowel-2') || cell.classList.contains('vowel-3') || cell.classList.contains('vowel-4')) {
-                        ctx.strokeStyle = style.borderColor || '#e74c3c';
-                        ctx.lineWidth = 3;
-                        ctx.strokeRect(cx, cy, cellSize, cellSize);
-                    }
-                    if (cell.classList.contains('vowel-3') || cell.classList.contains('vowel-4')) {
-                        ctx.strokeStyle = style.borderColor || '#e74c3c';
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.moveTo(cx, cy);
-                        ctx.lineTo(cx + cellSize, cy + cellSize);
-                        ctx.stroke();
-                    }
-                    if (cell.classList.contains('vowel-4')) {
-                        ctx.beginPath();
-                        ctx.moveTo(cx + cellSize, cy);
-                        ctx.lineTo(cx, cy + cellSize);
-                        ctx.stroke();
-                    }
-                });
-                if (showLegend && captionText) {
-                    ctx.fillStyle = textColor;
-                    ctx.font = '12px monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(captionText, ox + gridPixelSize/2, oy + gridPixelSize + 12);
-                }
-            });
-            let mime = 'image/png';
-            if (format === 'jpeg') mime = 'image/jpeg';
-            if (format === 'webp') mime = 'image/webp';
-            const url = canvas.toDataURL(mime, 0.92);
+const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
+             const cellSizeVal = isNaN(cellSize) ? 30 : cellSize;
+             const blockGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--block-gap'));
+             const blockGapVal = isNaN(blockGap) ? 15 : blockGap;
+             const rowGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--block-row-gap'));
+             const rowGapVal = isNaN(rowGap) ? 15 : rowGap;
+             const blocksPerLine = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--blocks-per-line'));
+             const blocksPerLineVal = isNaN(blocksPerLine) ? 6 : blocksPerLine;
+             const wrappers = Array.from(container.querySelectorAll('.grid-wrapper'));
+             const grids = wrappers.map(w => w.querySelector('.grid-7x7'));
+             const innerGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-gap'));
+             const innerGapVal = isNaN(innerGap) ? 2 : innerGap;
+             const gridPixelSize = 7 * cellSizeVal + 6 * innerGapVal;
+             const captionH = 14;
+             const cols = blocksPerLineVal;
+             const rows = Math.ceil(grids.length / cols);
+             const showLegend = document.getElementById('legend-toggle').checked;
+             const canvasW = cols * gridPixelSize + (cols - 1) * blockGapVal;
+             const canvasH = rows * (gridPixelSize + (showLegend ? captionH : 0)) + (rows - 1) * rowGapVal;
+             const bg = getComputedStyle(document.documentElement).getPropertyValue('--content-bg').trim() || '#fff';
+             const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim() || '#333';
+             if (format === 'svg') {
+                 let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}" viewBox="0 0 ${canvasW} ${canvasH}">`;
+                 svg += `<rect width="${canvasW}" height="${canvasH}" fill="${bg}"/>`;
+                 grids.forEach((gridEl, idx) => {
+                     const r = Math.floor(idx / cols);
+                     const c = idx % cols;
+                     const ox = c * (gridPixelSize + blockGapVal);
+                     const oy = r * (gridPixelSize + (showLegend ? captionH : 0)) + r * rowGapVal;
+                     const wrapper = wrappers[idx];
+                     const captionText = (showLegend && wrapper) ? (wrapper.querySelector('.grid-caption')?.textContent || '') : '';
+                     const cells = gridEl.querySelectorAll('.cell');
+                     cells.forEach((cell, i) => {
+                         const cx = ox + (i % 7) * (cellSizeVal + innerGapVal);
+                         const cy = oy + Math.floor(i / 7) * (cellSizeVal + innerGapVal);
+                         const style = getComputedStyle(cell);
+                         const fill = style.backgroundColor;
+                         svg += `<rect x="${cx}" y="${cy}" width="${cellSizeVal}" height="${cellSizeVal}" fill="${fill}"/>`;
+                         if (cell.classList.contains('vowel-2') || cell.classList.contains('vowel-3') || cell.classList.contains('vowel-4')) {
+                             const border = style.borderColor || '#e74c3c';
+                             svg += `<rect x="${cx}" y="${cy}" width="${cellSizeVal}" height="${cellSizeVal}" fill="none" stroke="${border}" stroke-width="3"/>`;
+                         }
+                         if (cell.classList.contains('vowel-3') || cell.classList.contains('vowel-4')) {
+                             const vcol = style.borderColor || '#e74c3c';
+                             svg += `<line x1="${cx}" y1="${cy}" x2="${cx+cellSizeVal}" y2="${cy+cellSizeVal}" stroke="${vcol}" stroke-width="2"/>`;
+                         }
+                         if (cell.classList.contains('vowel-4')) {
+                             const vcol = style.borderColor || '#e74c3c';
+                             svg += `<line x1="${cx+cellSizeVal}" y1="${cy}" x2="${cx}" y2="${cy+cellSizeVal}" stroke="${vcol}" stroke-width="2"/>`;
+                         }
+                     });
+                     if (showLegend && captionText) {
+                         svg += `<text x="${ox + gridPixelSize/2}" y="${oy + gridPixelSize + 12}" text-anchor="middle" font-family="monospace" font-size="12" fill="${textColor}">${captionText}</text>`;
+                     }
+                 });
+                 svg += `</svg>`;
+                 const blob = new Blob([svg], {type:'image/svg+xml'});
+                 const url = URL.createObjectURL(blob);
+                 const a = document.createElement('a');
+                 a.href = url;
+                 a.download = 'blocos.svg';
+                 a.click();
+                 URL.revokeObjectURL(url);
+                 return;
+             }
+             const canvas = document.createElement('canvas');
+             canvas.width = canvasW;
+             canvas.height = canvasH;
+             const ctx = canvas.getContext('2d');
+             ctx.fillStyle = bg;
+             ctx.fillRect(0, 0, canvasW, canvasH);
+             grids.forEach((gridEl, idx) => {
+                 const r = Math.floor(idx / cols);
+                 const c = idx % cols;
+                 const ox = c * (gridPixelSize + blockGapVal);
+                 const oy = r * (gridPixelSize + (showLegend ? captionH : 0)) + r * rowGapVal;
+                 const wrapper = wrappers[idx];
+                 const captionText = (showLegend && wrapper) ? (wrapper.querySelector('.grid-caption')?.textContent || '') : '';
+                 const cells = gridEl.querySelectorAll('.cell');
+                 cells.forEach((cell, i) => {
+                     const cx = ox + (i % 7) * (cellSizeVal + innerGapVal);
+                     const cy = oy + Math.floor(i / 7) * (cellSizeVal + innerGapVal);
+                     const style = getComputedStyle(cell);
+                     ctx.fillStyle = style.backgroundColor;
+                     ctx.fillRect(cx, cy, cellSizeVal, cellSizeVal);
+                     if (cell.classList.contains('vowel-2') || cell.classList.contains('vowel-3') || cell.classList.contains('vowel-4')) {
+                         ctx.strokeStyle = style.borderColor || '#e74c3c';
+                         ctx.lineWidth = 3;
+                         ctx.strokeRect(cx, cy, cellSizeVal, cellSizeVal);
+                     }
+                     if (cell.classList.contains('vowel-3') || cell.classList.contains('vowel-4')) {
+                         ctx.strokeStyle = style.borderColor || '#e74c3c';
+                         ctx.lineWidth = 2;
+                         ctx.beginPath();
+                         ctx.moveTo(cx, cy);
+                         ctx.lineTo(cx + cellSizeVal, cy + cellSizeVal);
+                         ctx.stroke();
+                     }
+                     if (cell.classList.contains('vowel-4')) {
+                         ctx.beginPath();
+                         ctx.moveTo(cx + cellSizeVal, cy);
+                         ctx.lineTo(cx, cy + cellSizeVal);
+                         ctx.stroke();
+                     }
+                 });
+                 if (showLegend && captionText) {
+                     ctx.fillStyle = textColor;
+                     ctx.font = '12px monospace';
+                     ctx.textAlign = 'center';
+                     ctx.fillText(captionText, ox + gridPixelSize/2, oy + gridPixelSize + 12);
+                 }
+});
+             let mime = 'image/png';
+             if (format === 'jpeg') mime = 'image/jpeg';
+             if (format === 'webp') mime = 'image/webp';
+             const url = canvas.toDataURL(mime, 0.92);
             const a = document.createElement('a');
             a.href = url;
             a.download = `blocos.${format}`;
