@@ -13,6 +13,10 @@
             --grid-filled: #2c3e50; /* Cor Consonantal */
             --grid-vowel: #e74c3c;  /* Cor Vocálica (Vermelho) */
             --accent: #3498db;
+            --cell-radius: 3px;
+            --cell-size: 30px;
+            --blocks-per-line: 6;
+            --block-gap: 15px;
         }
 
         body {
@@ -65,8 +69,8 @@
 
         .grid-7x7 {
             display: grid;
-            grid-template-columns: repeat(7, 30px);
-            grid-template-rows: repeat(7, 30px);
+            grid-template-columns: repeat(7, var(--cell-size));
+            grid-template-rows: repeat(7, var(--cell-size));
             gap: 2px;
             margin: 0 auto 1.5rem auto;
             width: fit-content;
@@ -74,7 +78,7 @@
 
         .cell {
             background-color: var(--grid-empty);
-            border-radius: 3px;
+            border-radius: var(--cell-radius);
             cursor: pointer;
             transition: background-color 0.1s;
             box-sizing: border-box; 
@@ -175,20 +179,90 @@
         }
 
         .word-display {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(var(--blocks-per-line), auto);
+            gap: var(--block-gap);
             justify-content: center;
         }
 
         .grid-display .cell {
             cursor: default;
         }
+
+        .color-panel {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 0.5rem 1rem;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-size: 0.9rem;
+            flex-wrap: wrap;
+        }
+        .color-panel label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .color-panel input[type="color"] {
+            width: 32px;
+            height: 24px;
+            border: none;
+            padding: 0;
+            background: none;
+            cursor: pointer;
+        }
+        .color-panel button {
+            margin-left: auto;
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background: #f8f8f8;
+            cursor: pointer;
+        }
+        .color-panel input[type="range"] {
+            width: 70px;
+            vertical-align: middle;
+        }
+        .color-panel #radius-val {
+            min-width: 1.2em;
+            text-align: right;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+        .color-panel #size-val,
+        .color-panel #perline-val {
+            min-width: 1.2em;
+            text-align: right;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+        .color-panel #gap-val {
+            min-width: 1.2em;
+            text-align: right;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
     </style>
 </head>
 <body>
 
     <h1>Laboratório Fonético Visual</h1>
+
+    <div class="color-panel">
+        <span>Cores:</span>
+        <label>Fundo <input type="color" id="color-bg" value="#f4f4f9"></label>
+        <label>Vazias <input type="color" id="color-empty" value="#e0e0e0"></label>
+        <label>Vogais <input type="color" id="color-vowel" value="#e74c3c"></label>
+        <label>Arredondar <input type="range" id="radius-slider" min="0" max="15" step="1" value="3"><span id="radius-val">3</span>px</label>
+        <label>Tamanho <input type="range" id="size-slider" min="10" max="50" step="1" value="30"><span id="size-val">30</span>px</label>
+        <label>Por linha <input type="range" id="perline-slider" min="1" max="15" step="1" value="6"><span id="perline-val">6</span></label>
+        <label>Espaço <input type="range" id="gap-slider" min="0" max="40" step="1" value="15"><span id="gap-val">15</span>px</label>
+        <button onclick="resetColors()">Restaurar</button>
+    </div>
 
     <div class="tabs">
         <button class="tab-btn" onclick="switchTab('editor')">Editor de Caracteres</button>
@@ -446,7 +520,98 @@
             return grid;
         }
 
+        function loadColors() {
+            const defs = {'--bg-color':'#f4f4f9','--grid-empty':'#e0e0e0','--grid-vowel':'#e74c3c','--cell-radius':'3px','--cell-size':'30px','--blocks-per-line':'6','--block-gap':'15px'};
+            for (let k in defs) {
+                const v = localStorage.getItem(k) || defs[k];
+                document.documentElement.style.setProperty(k, v);
+            }
+        }
+
+        function initColorControls() {
+            loadColors();
+            const ids = {bg:'color-bg', empty:'color-empty', vowel:'color-vowel'};
+            const vars = {bg:'--bg-color', empty:'--grid-empty', vowel:'--grid-vowel'};
+            for (let key in ids) {
+                const inp = document.getElementById(ids[key]);
+                const varn = vars[key];
+                inp.value = getComputedStyle(document.documentElement).getPropertyValue(varn).trim();
+                inp.addEventListener('input', () => {
+                    document.documentElement.style.setProperty(varn, inp.value);
+                    localStorage.setItem(varn, inp.value);
+                });
+            }
+            const rs = document.getElementById('radius-slider');
+            const rv = document.getElementById('radius-val');
+            let r = getComputedStyle(document.documentElement).getPropertyValue('--cell-radius').trim() || '3px';
+            let n = parseInt(r) || 3;
+            rs.value = n;
+            rv.textContent = n;
+            rs.addEventListener('input', () => {
+                const val = rs.value + 'px';
+                document.documentElement.style.setProperty('--cell-radius', val);
+                localStorage.setItem('--cell-radius', val);
+                rv.textContent = rs.value;
+            });
+            const ss = document.getElementById('size-slider');
+            const sv = document.getElementById('size-val');
+            let s = getComputedStyle(document.documentElement).getPropertyValue('--cell-size').trim() || '30px';
+            let sn = parseInt(s) || 30;
+            ss.value = sn;
+            sv.textContent = sn;
+            ss.addEventListener('input', () => {
+                const val = ss.value + 'px';
+                document.documentElement.style.setProperty('--cell-size', val);
+                localStorage.setItem('--cell-size', val);
+                sv.textContent = ss.value;
+            });
+            const ps = document.getElementById('perline-slider');
+            const pv = document.getElementById('perline-val');
+            let p = getComputedStyle(document.documentElement).getPropertyValue('--blocks-per-line').trim() || '6';
+            let pn = parseInt(p) || 6;
+            ps.value = pn;
+            pv.textContent = pn;
+            ps.addEventListener('input', () => {
+                const val = ps.value;
+                document.documentElement.style.setProperty('--blocks-per-line', val);
+                localStorage.setItem('--blocks-per-line', val);
+                pv.textContent = ps.value;
+            });
+            const gs = document.getElementById('gap-slider');
+            const gv = document.getElementById('gap-val');
+            let g = getComputedStyle(document.documentElement).getPropertyValue('--block-gap').trim() || '15px';
+            let gn = parseInt(g) || 15;
+            gs.value = gn;
+            gv.textContent = gn;
+            gs.addEventListener('input', () => {
+                const val = gs.value + 'px';
+                document.documentElement.style.setProperty('--block-gap', val);
+                localStorage.setItem('--block-gap', val);
+                gv.textContent = gs.value;
+            });
+        }
+
+        function resetColors() {
+            const defs = {'--bg-color':'#f4f4f9','--grid-empty':'#e0e0e0','--grid-vowel':'#e74c3c','--cell-radius':'3px','--cell-size':'30px','--blocks-per-line':'6','--block-gap':'15px'};
+            for (let k in defs) {
+                document.documentElement.style.setProperty(k, defs[k]);
+                localStorage.removeItem(k);
+            }
+            document.getElementById('color-bg').value = defs['--bg-color'];
+            document.getElementById('color-empty').value = defs['--grid-empty'];
+            document.getElementById('color-vowel').value = defs['--grid-vowel'];
+            document.getElementById('radius-slider').value = 3;
+            document.getElementById('radius-val').textContent = 3;
+            document.getElementById('size-slider').value = 30;
+            document.getElementById('size-val').textContent = 30;
+            document.getElementById('perline-slider').value = 6;
+            document.getElementById('perline-val').textContent = 6;
+            document.getElementById('gap-slider').value = 15;
+            document.getElementById('gap-val').textContent = 15;
+        }
+
         initEditor();
+        initColorControls();
 
     </script>
 </body>
