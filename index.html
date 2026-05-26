@@ -274,6 +274,23 @@
             border-radius: 4px;
             margin-left: 0.5rem;
         }
+
+        .grid-caption {
+            text-align: center;
+            font-size: 0.75rem;
+            font-family: monospace;
+            margin-top: 4px;
+            color: var(--text-color);
+        }
+
+        .grid-wrapper {
+            display: inline-block;
+        }
+
+        .color-panel input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
     </style>
 </head>
 <body>
@@ -293,6 +310,7 @@
         <label>Espaço <input type="range" id="gap-slider" min="0" max="40" step="1" value="15"><span id="gap-val">15</span>px</label>
         <label>Quebra <input type="range" id="row-gap-slider" min="0" max="40" step="1" value="15"><span id="row-gap-val">15</span>px</label>
         <label>Interno <input type="range" id="internal-slider" min="0" max="10" step="1" value="2"><span id="internal-val">2</span>px</label>
+        <label>Legendas <input type="checkbox" id="legend-toggle" checked></label>
         <button onclick="resetColors()">Restaurar</button>
     </div>
 
@@ -511,8 +529,8 @@
                         let charNum = bloco[numIndex];
                         let estadoAtual = [...dicionario[charNum]];
                         
-                        let ordemAnterior = 0; 
-                        let ordemPosterior = 0; 
+                        let ordemAnterior = 0;
+                        let ordemPosterior = 0;
 
                         for (let i = 0; i < bloco.length; i++) {
                             if (i === numIndex) continue;
@@ -522,21 +540,30 @@
                             if (i < numIndex) {
                                 if (vogaisAnteriores[charVogal]) {
                                     let estadoId = 2 + ordemAnterior;
-                                    if (estadoId > 5) estadoId = 5; 
+                                    if (estadoId > 5) estadoId = 5;
                                     estadoAtual = aplicarVogal(estadoAtual, vogaisAnteriores[charVogal], estadoId);
                                     ordemAnterior++;
                                 }
                             } else {
                                 if (vogaisPosteriores[charVogal]) {
                                     let estadoId = 2 + ordemPosterior;
-                                    if (estadoId > 5) estadoId = 5; 
+                                    if (estadoId > 5) estadoId = 5;
                                     estadoAtual = aplicarVogal(estadoAtual, vogaisPosteriores[charVogal], estadoId);
                                     ordemPosterior++;
                                 }
                             }
                         }
 
-                        container.appendChild(createDisplayGrid(estadoAtual));
+                        const wrapper = document.createElement('div');
+                        wrapper.classList.add('grid-wrapper');
+                        wrapper.appendChild(createDisplayGrid(estadoAtual));
+                        if (document.getElementById('legend-toggle').checked) {
+                            const caption = document.createElement('div');
+                            caption.classList.add('grid-caption');
+                            caption.textContent = bloco;
+                            wrapper.appendChild(caption);
+                        }
+                        container.appendChild(wrapper);
                     }
                 }
             }
@@ -655,6 +682,13 @@
                 localStorage.setItem('--cell-gap', val);
                 iv.textContent = is.value;
             });
+            const legendToggle = document.getElementById('legend-toggle');
+            const legendStored = localStorage.getItem('show-legend');
+            if (legendStored !== null) legendToggle.checked = legendStored === 'true';
+            legendToggle.addEventListener('change', () => {
+                localStorage.setItem('show-legend', legendToggle.checked);
+                if (document.getElementById('text-input').value) renderText();
+            });
         }
 
         function resetColors() {
@@ -690,13 +724,16 @@
             const blockGap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--block-gap')) || 15;
             const rowGap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--block-row-gap')) || 15;
             const blocksPerLine = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--blocks-per-line')) || 6;
-            const grids = Array.from(container.querySelectorAll('.grid-7x7'));
+            const wrappers = Array.from(container.querySelectorAll('.grid-wrapper'));
+            const grids = wrappers.map(w => w.querySelector('.grid-7x7'));
             const innerGap = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-gap')) || 2;
             const gridPixelSize = 7 * cellSize + 6 * innerGap;
+            const captionH = 14;
             const cols = blocksPerLine;
             const rows = Math.ceil(grids.length / cols);
+            const showLegend = document.getElementById('legend-toggle').checked;
             const canvasW = cols * gridPixelSize + (cols - 1) * blockGap;
-            const canvasH = rows * gridPixelSize + (rows - 1) * rowGap;
+            const canvasH = rows * (gridPixelSize + (showLegend ? captionH : 0)) + (rows - 1) * rowGap;
             if (format === 'svg') {
                 let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}" viewBox="0 0 ${canvasW} ${canvasH}">`;
                 const bg = getComputedStyle(document.documentElement).getPropertyValue('--content-bg').trim() || '#fff';
@@ -705,7 +742,9 @@
                     const r = Math.floor(idx / cols);
                     const c = idx % cols;
                     const ox = c * (gridPixelSize + blockGap);
-                    const oy = r * (gridPixelSize + rowGap);
+                    const oy = r * (gridPixelSize + (showLegend ? captionH : 0)) + r * rowGap;
+                    const wrapper = wrappers[idx];
+                    const captionText = (showLegend && wrapper) ? (wrapper.querySelector('.grid-caption')?.textContent || '') : '';
                     const cells = gridEl.querySelectorAll('.cell');
                     cells.forEach((cell, i) => {
                         const cx = ox + (i % 7) * (cellSize + innerGap);
@@ -726,6 +765,10 @@
                             svg += `<line x1="${cx+cellSize}" y1="${cy}" x2="${cx}" y2="${cy+cellSize}" stroke="${vcol}" stroke-width="2"/>`;
                         }
                     });
+                    if (showLegend && captionText) {
+                        const textCol = textColor;
+                        svg += `<text x="${ox + gridPixelSize/2}" y="${oy + gridPixelSize + 12}" text-anchor="middle" font-family="monospace" font-size="12" fill="${textCol}">${captionText}</text>`;
+                    }
                 });
                 svg += `</svg>`;
                 const blob = new Blob([svg], {type:'image/svg+xml'});
@@ -744,11 +787,14 @@
             const bg = getComputedStyle(document.documentElement).getPropertyValue('--content-bg').trim() || '#ffffff';
             ctx.fillStyle = bg;
             ctx.fillRect(0, 0, canvasW, canvasH);
+            const textColor = getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim() || '#333';
             grids.forEach((gridEl, idx) => {
                 const r = Math.floor(idx / cols);
                 const c = idx % cols;
                 const ox = c * (gridPixelSize + blockGap);
-                const oy = r * (gridPixelSize + rowGap);
+                const oy = r * (gridPixelSize + (showLegend ? captionH : 0)) + r * rowGap;
+                const wrapper = wrappers[idx];
+                const captionText = (showLegend && wrapper) ? (wrapper.querySelector('.grid-caption')?.textContent || '') : '';
                 const cells = gridEl.querySelectorAll('.cell');
                 cells.forEach((cell, i) => {
                     const cx = ox + (i % 7) * (cellSize + innerGap);
@@ -776,6 +822,12 @@
                         ctx.stroke();
                     }
                 });
+                if (showLegend && captionText) {
+                    ctx.fillStyle = textColor;
+                    ctx.font = '12px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(captionText, ox + gridPixelSize/2, oy + gridPixelSize + 12);
+                }
             });
             let mime = 'image/png';
             if (format === 'jpeg') mime = 'image/jpeg';
