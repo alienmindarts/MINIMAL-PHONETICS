@@ -910,15 +910,17 @@
             const container = document.getElementById('word-container');
             if (!container || !container.children.length) { alert('Nada para exportar'); return; }
             const format = document.getElementById('export-format').value;
-const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
-             const cellSizeVal = isNaN(cellSize) ? 30 : cellSize;
-             const blockGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--block-gap'));
-             const blockGapVal = isNaN(blockGap) ? 15 : blockGap;
-             const rowGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--block-row-gap'));
-             const rowGapVal = isNaN(rowGap) ? 15 : rowGap;
-             const blocksPerLine = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--blocks-per-line'));
-             const blocksPerLineVal = isNaN(blocksPerLine) ? 6 : blocksPerLine;
-             const wrappers = Array.from(container.querySelectorAll('.grid-wrapper'));
+              const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
+              const cellSizeVal = isNaN(cellSize) ? 30 : cellSize;
+              const blockGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--block-gap'));
+              const blockGapVal = isNaN(blockGap) ? 15 : blockGap;
+              const rowGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--block-row-gap'));
+              const rowGapVal = isNaN(rowGap) ? 15 : rowGap;
+              const blocksPerLine = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--blocks-per-line'));
+              const blocksPerLineVal = isNaN(blocksPerLine) ? 6 : blocksPerLine;
+              const cellRadius = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-radius'));
+              const cellRadiusVal = isNaN(cellRadius) ? 0 : cellRadius;
+              const wrappers = Array.from(container.querySelectorAll('.grid-wrapper'));
              const grids = wrappers.map(w => w.querySelector('.grid-7x7'));
              const innerGap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cell-gap'));
              const innerGapVal = isNaN(innerGap) ? 2 : innerGap;
@@ -940,22 +942,22 @@ const cellSize = parseInt(getComputedStyle(document.documentElement).getProperty
 
              if (format === 'svg') {
                  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasW}" height="${canvasH}" viewBox="0 0 ${canvasW} ${canvasH}">`;
-                 svg += `<rect width="${canvasW}" height="${canvasH}" fill="${bg}"/>`;
-                 grids.forEach((gridEl, idx) => {
-                     const r = Math.floor(idx / cols);
-                     const c = idx % cols;
-                     const ox = c * (gridPixelSize + blockGapVal);
-                     const oy = r * (gridPixelSize + captionHeight) + r * rowGapVal;
-                     const wrapper = wrappers[idx];
-                     const codeText = showCode ? (wrapper.querySelector('.grid-caption-code')?.textContent || '') : '';
-                     const textText = showText ? (wrapper.querySelector('.grid-caption-text')?.textContent || '') : '';
-                     const cells = gridEl.querySelectorAll('.cell');
-                     cells.forEach((cell, i) => {
-                         const cx = ox + (i % 7) * (cellSizeVal + innerGapVal);
-                         const cy = oy + Math.floor(i / 7) * (cellSizeVal + innerGapVal);
-                         const style = getComputedStyle(cell);
-                         const fill = style.backgroundColor;
-                         svg += `<rect x="${cx}" y="${cy}" width="${cellSizeVal}" height="${cellSizeVal}" fill="${fill}"/>`;
+                  svg += `<rect width="${canvasW}" height="${canvasH}" fill="${bg}"/>`;
+                  grids.forEach((gridEl, idx) => {
+                      const r = Math.floor(idx / cols);
+                      const c = idx % cols;
+                      const ox = c * (gridPixelSize + blockGapVal);
+                      const oy = r * (gridPixelSize + captionHeight) + r * rowGapVal;
+                      const wrapper = wrappers[idx];
+                      const codeText = showCode ? (wrapper.querySelector('.grid-caption-code')?.textContent || '') : '';
+                      const textText = showText ? (wrapper.querySelector('.grid-caption-text')?.textContent || '') : '';
+                      const cells = gridEl.querySelectorAll('.cell');
+                      cells.forEach((cell, i) => {
+                          const cx = ox + (i % 7) * (cellSizeVal + innerGapVal);
+                          const cy = oy + Math.floor(i / 7) * (cellSizeVal + innerGapVal);
+                          const style = getComputedStyle(cell);
+                          const fill = style.backgroundColor;
+                          svg += `<rect x="${cx}" y="${cy}" width="${cellSizeVal}" height="${cellSizeVal}" rx="${cellRadiusVal}" ry="${cellRadiusVal}" fill="${fill}"/>`;
                          if (cell.classList.contains('vowel-2') || cell.classList.contains('vowel-3') || cell.classList.contains('vowel-4')) {
                              const border = style.borderColor || '#e74c3c';
                              svg += `<rect x="${cx}" y="${cy}" width="${cellSizeVal}" height="${cellSizeVal}" fill="none" stroke="${border}" stroke-width="3"/>`;
