@@ -1,0 +1,12 @@
+{
+  "name": "minimal-phonetics-gerador",
+  "version": "1.0.0",
+  "description": "Gerador de imagens SVG/PNG para o Alfabeto Fonético Visual",
+  "main": "gerar-imagens.js",
+  "scripts": {
+    "gerar": "node gerar-imagens.js"
+  },
+  "optionalDependencies": {
+    "sharp": "^0.33.0"
+  }
+}
