@@ -357,6 +357,7 @@
         <span>Cores:</span>
         <label>Página <input type="color" id="color-page" value="#f4f4f9"></label>
         <label>Caixa <input type="color" id="color-box" value="#ffffff"></label>
+<label>Caixa transparente <input type="checkbox" id="color-box-transparent"></label>
         <label>Números <input type="color" id="color-filled" value="#2c3e50"></label>
         <label>Vazias <input type="color" id="color-empty" value="#e0e0e0"></label>
         <label>Vogais <input type="color" id="color-vowel" value="#e74c3c"></label>
@@ -792,6 +793,26 @@
                     localStorage.setItem(varn, inp.value);
                 });
             }
+            const transCheckbox = document.getElementById('color-box-transparent');
+            const transStored = localStorage.getItem('--content-bg') === 'transparent';
+            transCheckbox.checked = transStored;
+            if (transStored) document.getElementById('color-box').value = '#ffffff';
+            transCheckbox.addEventListener('change', () => {
+                if (transCheckbox.checked) {
+                    document.documentElement.style.setProperty('--content-bg', 'transparent');
+                    localStorage.setItem('--content-bg', 'transparent');
+                } else {
+                    const boxVal = document.getElementById('color-box').value;
+                    document.documentElement.style.setProperty('--content-bg', boxVal);
+                    localStorage.setItem('--content-bg', boxVal);
+                }
+            });
+            document.getElementById('color-box').addEventListener('input', () => {
+                if (!transCheckbox.checked) {
+                    document.documentElement.style.setProperty('--content-bg', document.getElementById('color-box').value);
+                    localStorage.setItem('--content-bg', document.getElementById('color-box').value);
+                }
+            });
             const rs = document.getElementById('radius-slider');
             const rv = document.getElementById('radius-val');
             let r = getComputedStyle(document.documentElement).getPropertyValue('--cell-radius').trim() || '3px';
